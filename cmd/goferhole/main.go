@@ -19,7 +19,9 @@ func main() {
 		rx, _, err := c.Exchange(r, "1.1.1.1:53")
 		if err != nil {
 			log.Printf("Lookup failed: %s\n", err.Error())
+			return
 		}
+
 		w.WriteMsg(rx)
 	})
 
