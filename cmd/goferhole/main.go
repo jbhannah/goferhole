@@ -11,6 +11,8 @@ import (
 
 func main() {
 	port := 8053
+
+	goferhole.NewResolver()
 	goferhole.Listen(port)
 
 	sig := make(chan os.Signal)

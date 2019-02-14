@@ -2,24 +2,45 @@ package goferhole
 
 import (
 	"log"
-	"strconv"
 
 	"github.com/miekg/dns"
 )
 
-// Listen starts udp and tcp DNS listeners on the specified port
-func Listen(port int) {
-	go func() {
-		srv := &dns.Server{Addr: ":" + strconv.Itoa(port), Net: "udp"}
-		if err := srv.ListenAndServe(); err != nil {
-			log.Fatalf("Failed to set udp listener: %s\n", err.Error())
-		}
-	}()
+// Resolver defines the interface for mutating DNS resolution handlers
+type Resolver interface {
+	AddHandler(string, dns.HandlerFunc)
+	Forward(dns.ResponseWriter, *dns.Msg)
+}
 
-	go func() {
-		srv := &dns.Server{Addr: ":" + strconv.Itoa(port), Net: "tcp"}
-		if err := srv.ListenAndServe(); err != nil {
-			log.Fatalf("Failed to set tcp listener: %s\n", err.Error())
-		}
-	}()
+type resolver struct {
+	c *dns.Client
+}
+
+// NewResolver returns a new instance of a Resolver
+func NewResolver() Resolver {
+	res := &resolver{c: &dns.Client{}}
+	res.AddHandler(".", res.Forward)
+
+	log.Printf("Initialzed resolver")
+	return res
+}
+
+// AddHandler registers a new handler with the DNS resolver
+func (res *resolver) AddHandler(pattern string, handler dns.HandlerFunc) {
+	log.Printf("Adding handler for %s", pattern)
+	dns.HandleFunc(pattern, handler)
+}
+
+// Forward forwards a DNS request to an external resolver
+func (res *resolver) Forward(w dns.ResponseWriter, r *dns.Msg) {
+	log.Printf("Forwarding question: %v", r.Question)
+	rx, _, err := res.c.Exchange(r, "1.1.1.1:53")
+
+	if err != nil {
+		log.Printf("Lookup failed: %s\n", err.Error())
+		return
+	}
+
+	log.Printf("Sending answer: %v", rx.Answer)
+	w.WriteMsg(rx)
 }
