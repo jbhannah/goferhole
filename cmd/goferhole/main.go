@@ -13,10 +13,10 @@ import (
 func main() {
 	port := 8053
 
-	c := &dns.Client{Net: "tcp-tls"}
+	c := &dns.Client{}
 
 	dns.HandleFunc(".", func(w dns.ResponseWriter, r *dns.Msg) {
-		rx, _, err := c.Exchange(r, "1.1.1.1:853")
+		rx, _, err := c.Exchange(r, "1.1.1.1:53")
 		if err != nil {
 			log.Printf("Lookup failed: %s\n", err.Error())
 		}
